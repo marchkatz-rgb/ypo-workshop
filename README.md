@@ -1,33 +1,50 @@
-# YPO Workshop
+# The World According to Miles
 
-A simple starter website built with [Vite](https://vitejs.dev), connected to a
-[Supabase](https://supabase.com) database, and deployed on [Vercel](https://vercel.com).
+An interactive speculative-evolution app: design a planet, carve it into regions,
+then invent the organisms that could survive there. A science mentor (powered by
+Claude) asks the hard questions; the creator makes every decision.
 
-The site shows a public guestbook: visitors can post a short message and see recent entries.
+Built with [Vite](https://vitejs.dev) + React, [Supabase](https://supabase.com)
+(database and accounts), and deployed on [Vercel](https://vercel.com).
+
+## What it does
+
+- **Planet builder**: star, orbit, size, gravity, day length, atmosphere, air,
+  water, seasons, moons. Each choice explains its consequence for life.
+- **Regions**: biomes like shallow seas, deserts, caves, or the twilight ring of
+  a tidally locked world, each drawn as a living scene.
+- **Creature workshop**: a guided set of questions (home, food, movement,
+  breathing, senses, reproduction, defense, behavior, appearance). Built-in rules
+  flag clashes with the planet and the food web and ask follow-up questions.
+- **Illustrator**: every creature is drawn from its own settings, so it always
+  looks the same.
+- **Field guide**: a page per organism with anatomy, diet, behavior, and who eats whom.
+- **Science mentor**: chat with Claude about the planet or a specific creature.
+- **Accounts**: anyone can view public worlds; you must sign in to build.
 
 ## Local development
 
 ```bash
 npm install
-cp .env.example .env   # then fill in the values from the Supabase dashboard
+cp .env.example .env   # fill in the public Supabase values
 npm run dev
 ```
 
 ## Environment variables
 
-| Name | Where to find it |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase dashboard → Project Settings → API → Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase dashboard → Project Settings → API Keys → Publishable key |
-
-Both values are **public** and safe to ship to the browser. Never put the Supabase
-`secret` / `service_role` key in this repo or in the website.
+| Name | Where it lives | Notes |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Vercel + `.env` | Public. Supabase dashboard → Project Settings → API |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Vercel + `.env` | Public. Supabase dashboard → API Keys → Publishable key |
+| `ANTHROPIC_API_KEY` | Vercel only (sensitive) | **Secret.** Enables the science mentor. Never put it in the code or `.env.example`. |
 
 ## Database
 
-The `guestbook` table lives in `supabase/migrations/`. Row Level Security is enabled:
-anyone can read and insert entries; nobody can update or delete them from the client.
+Migrations live in `supabase/migrations/`. Row Level Security is on for every
+table: public planets are readable by everyone; only the owner can change a
+planet, its regions, and its organisms; mentor chats are private to their author.
 
 ## Deployment
 
-Vercel builds from the `main` branch. Every push to `main` is a production deployment.
+Vercel builds from the `main` branch as a production deployment. The mentor runs
+as a serverless function in `api/mentor.ts`, so the Anthropic key stays on the server.
