@@ -124,6 +124,35 @@ export function drawingUrl(path: string): string {
   return supabase.storage.from(ART_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+export function illustrationUrl(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+export interface IllustrateRequest {
+  planetId: string;
+  organismId: string;
+  drawingPath: string;
+  name: string;
+  kind: string;
+  description?: string;
+  traits?: Record<string, unknown>;
+}
+
+/** Asks the server to redraw a drawing in the app's style. Returns the SVG markup. */
+export async function illustrateDrawing(req: IllustrateRequest): Promise<string> {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  if (!token) throw new Error("Please sign in first.");
+  const res = await fetch("/api/illustrate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  const body = (await res.json().catch(() => ({}))) as { svg?: string; error?: string };
+  if (!res.ok || !body.svg) throw new Error(body.error ?? `Illustrator error (${res.status})`);
+  return body.svg;
+}
+
 export async function removeDrawingFiles(d: Drawing): Promise<void> {
   const paths = [d.originalPath, d.cutoutPath].filter(Boolean);
   if (paths.length) await supabase.storage.from(ART_BUCKET).remove(paths);

@@ -115,8 +115,15 @@ export interface Drawing {
   flip: boolean; // mirror so the creature faces right in scenes
 }
 
+/** The app's own illustration of the creator's drawing, as sanitized SVG markup. */
+export interface Illustration {
+  svg: string;
+  createdAt: string;
+}
+
 export interface Appearance {
   drawing?: Drawing | null;
+  illustration?: Illustration | null;
   bodyShape: BodyShape;
   limbType: LimbType;
   limbCount: number; // 0-8

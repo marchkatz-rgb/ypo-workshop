@@ -5,7 +5,7 @@ import { CreatureSprite } from "../components/CreatureSprite";
 import { Findings } from "../components/Findings";
 import { MentorPanel } from "../components/MentorPanel";
 import { useAuth } from "../lib/auth";
-import { deleteOrganism, drawingUrl, friendlyError, loadPlanet, type PlanetBundle } from "../lib/data";
+import { deleteOrganism, drawingUrl, friendlyError, illustrationUrl, loadPlanet, type PlanetBundle } from "../lib/data";
 import {
   ACTIVITY_OPTIONS, BREATHING_OPTIONS, DEFENSE_OPTIONS, DIET_OPTIONS, LOCOMOTION_OPTIONS, REPRODUCTION_OPTIONS,
   SENSE_OPTIONS, SIZE_OPTIONS, SOCIAL_OPTIONS, optLabel,
@@ -54,13 +54,26 @@ export function OrganismPage() {
       <div className="grid-2" style={{ alignItems: "start" }}>
         <div className="stack">
           <div className="art-frame" style={{ minHeight: 280 }}>
-            <CreatureSprite appearance={o.appearance} kind={o.kind} seed={o.id} size={260} />
+            <CreatureSprite appearance={o.appearance} kind={o.kind} seed={o.id} size={260} prefer="drawing" />
           </div>
           {o.appearance.drawing?.cutoutPath ? (
-            <div className="row small" style={{ justifyContent: "space-between" }}>
-              <span className="muted">Drawn by the creator</span>
-              <a href={drawingUrl(o.appearance.drawing.originalPath)} target="_blank" rel="noreferrer">View original picture</a>
-              <span className="row" style={{ gap: 6 }}><span className="muted">App version:</span><CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} size={48} /></span>
+            <div className="stack">
+              <div className="row small" style={{ justifyContent: "space-between" }}>
+                <span className="muted">Drawn by the creator</span>
+                <a href={drawingUrl(o.appearance.drawing.originalPath)} target="_blank" rel="noreferrer">View original picture</a>
+              </div>
+              <div className="row" style={{ alignItems: "flex-end", gap: 16 }}>
+                {o.appearance.illustration?.svg ? (
+                  <div className="stack" style={{ gap: 4 }}>
+                    <span className="muted small">App illustration</span>
+                    <div className="art-frame" style={{ padding: 6 }}><img src={illustrationUrl(o.appearance.illustration.svg)} alt="App illustration" style={{ width: 120, height: 120 }} /></div>
+                  </div>
+                ) : null}
+                <div className="stack" style={{ gap: 4 }}>
+                  <span className="muted small">Built-in version</span>
+                  <div className="art-frame" style={{ padding: 6 }}><CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} size={72} /></div>
+                </div>
+              </div>
             </div>
           ) : null}
           {isOwner ? (

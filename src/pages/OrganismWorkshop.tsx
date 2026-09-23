@@ -178,9 +178,16 @@ export function OrganismWorkshop() {
           <div className="stack">
             <div className="card" style={{ background: "var(--bg-2)" }}>
               <h3>Your own drawing (optional)</h3>
-              <DrawingEditor planetId={bundle.planet.id} organismId={draftId} value={appearance.drawing} onChange={(d) => ap({ drawing: d })} />
+              <DrawingEditor
+                planetId={bundle.planet.id}
+                organismId={draftId}
+                value={appearance.drawing}
+                illustration={appearance.illustration}
+                creature={{ name, kind, description, traits: { size: traits.size, locomotion: traits.locomotion, diet: traits.diet } }}
+                onChange={(patch) => ap(patch)}
+              />
             </div>
-            {appearance.drawing?.cutoutPath ? <p className="muted small">The choices below still describe the creature for the app, and they draw the fallback picture. Your drawing is what shows in the scenes.</p> : null}
+            {appearance.drawing?.cutoutPath ? <p className="muted small">The choices below still describe the creature for the app, and they draw the fallback picture used until an illustration exists.</p> : null}
           <div className="grid-2">
             <div className="stack">
               {preview}

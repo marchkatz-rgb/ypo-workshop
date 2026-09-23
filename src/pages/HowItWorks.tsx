@@ -107,7 +107,7 @@ const STEPS = [
     body: (
       <>
         <p>Draw a creature on paper or in a drawing app, then add a photo of it in the Appearance step. Crop it, erase the paper with the slider, and flip it to face the right way.</p>
-        <p>From then on your drawing is the creature: in the scenes, on the cards, and on its field guide page. The science mentor can look at it too.</p>
+        <p>Your drawing becomes the main picture on the creature's field guide page, and the science mentor can look at it. Then tap <b>Illustrate my drawing</b>: the app redraws your creature in its own cartoon style, keeping the same body, limbs, and colors, and that illustration is what walks, swims, or flies in the region scenes.</p>
         <p className="muted small">Tip: photograph drawings in even light. Shadows across the page are the one thing the eraser struggles with.</p>
       </>
     ),

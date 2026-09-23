@@ -186,3 +186,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .dot { width: 10px; height: 10px; border-radius: 50%; border: 0; padding: 0; background: var(--border); cursor: pointer; min-height: 0; }
 .dot.on { background: var(--accent); }
 @media (max-width: 600px) { .dots { display: none; } }
+
+.illustration-box { display: grid; gap: 12px; grid-template-columns: minmax(180px, 240px) 1fr; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+@media (max-width: 600px) { .illustration-box { grid-template-columns: 1fr; } }

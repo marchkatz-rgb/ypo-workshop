@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { supabase } from "../lib/supabase";
-import { drawingUrl, friendlyError, removeDrawingFiles } from "../lib/data";
+import { drawingUrl, friendlyError, illustrateDrawing, illustrationUrl, removeDrawingFiles } from "../lib/data";
 import { canvasToBlob, cropCanvas, erasePaperBackground, fileToCanvas, padToSquare, scaleCanvas, trimTransparent, type Rect } from "../lib/imageTools";
-import type { Drawing } from "../lib/types";
+import type { Drawing, Illustration } from "../lib/types";
 
 interface Props {
   planetId: string;
   organismId: string;
   value: Drawing | null | undefined;
-  onChange: (d: Drawing | null) => void;
+  illustration: Illustration | null | undefined;
+  /** Context the illustrator uses to stay faithful to the creature. */
+  creature: { name: string; kind: string; description: string; traits: Record<string, unknown> };
+  onChange: (patch: { drawing?: Drawing | null; illustration?: Illustration | null }) => void;
 }
 
 type Handle = "move" | "nw" | "ne" | "sw" | "se";
@@ -17,7 +20,7 @@ type Handle = "move" | "nw" | "ne" | "sw" | "se";
  * Upload a drawing or photo, crop it, erase the paper background, flip it,
  * and save it to storage. Everything happens on the device before upload.
  */
-export function DrawingEditor({ planetId, organismId, value, onChange }: Props) {
+export function DrawingEditor({ planetId, organismId, value, illustration, creature, onChange }: Props) {
   const [source, setSource] = useState<HTMLCanvasElement | null>(null);
   const [crop, setCrop] = useState<Rect | null>(null);
   const [erase, setErase] = useState(true);
@@ -26,6 +29,7 @@ export function DrawingEditor({ planetId, organismId, value, onChange }: Props) 
   const [preview, setPreview] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [illustrating, setIllustrating] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
   // Where the photo actually sits inside the frame, in CSS pixels.
   const [disp, setDisp] = useState({ x: 0, y: 0, w: 1, h: 1 });
@@ -150,7 +154,8 @@ export function DrawingEditor({ planetId, organismId, value, onChange }: Props) 
       const r2 = await bucket.upload(cutoutPath, cutBlob, { contentType: "image/png", upsert: true });
       if (r2.error) throw r2.error;
       if (value) removeDrawingFiles(value).catch(() => {});
-      onChange({ originalPath, cutoutPath, flip });
+      // A new drawing means the old illustration no longer matches.
+      onChange({ drawing: { originalPath, cutoutPath, flip }, illustration: null });
       setSource(null);
       setPreview("");
       setSourceUrl("");
@@ -165,7 +170,29 @@ export function DrawingEditor({ planetId, organismId, value, onChange }: Props) 
     if (!value) return;
     if (!confirm("Remove this drawing? The app's own art will be used instead.")) return;
     await removeDrawingFiles(value).catch(() => {});
-    onChange(null);
+    onChange({ drawing: null, illustration: null });
+  }
+
+  async function illustrate() {
+    if (!value?.cutoutPath) return;
+    setIllustrating(true);
+    setError("");
+    try {
+      const svg = await illustrateDrawing({
+        planetId,
+        organismId,
+        drawingPath: value.cutoutPath,
+        name: creature.name || "unnamed creature",
+        kind: creature.kind,
+        description: creature.description,
+        traits: creature.traits,
+      });
+      onChange({ illustration: { svg, createdAt: new Date().toISOString() } });
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setIllustrating(false);
+    }
   }
 
   // Saved state: show the current drawing with replace / flip / remove.
@@ -179,8 +206,8 @@ export function DrawingEditor({ planetId, organismId, value, onChange }: Props) 
               <img src={drawingUrl(value.cutoutPath)} alt="Your drawing" style={{ maxWidth: 220, maxHeight: 220, transform: value.flip ? "scaleX(-1)" : undefined }} />
             </div>
             <div className="stack">
-              <p className="small muted">This drawing is used everywhere the creature appears, including the region scenes.</p>
-              <label className="row small"><input type="checkbox" checked={value.flip} onChange={(e) => onChange({ ...value, flip: e.target.checked })} /> Flip it so it faces the other way</label>
+              <p className="small muted">Your drawing shows on the creature's field guide page. Ask the app to illustrate it, and the illustration is what appears in the region scenes and on cards.</p>
+              <label className="row small"><input type="checkbox" checked={value.flip} onChange={(e) => onChange({ drawing: { ...value, flip: e.target.checked } })} /> Flip it so it faces the other way</label>
               <div className="row">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>Replace drawing</button>
                 <button type="button" className="btn btn-danger btn-sm" onClick={remove} disabled={busy}>Remove</button>
@@ -194,6 +221,29 @@ export function DrawingEditor({ planetId, organismId, value, onChange }: Props) 
             <button type="button" className="btn btn-accent" onClick={() => fileInput.current?.click()} disabled={busy}>{busy ? "Loading…" : "📷 Add your own drawing"}</button>
           </div>
         )}
+        {value?.cutoutPath ? (
+          <div className="illustration-box">
+            <div className="art-frame" style={{ minHeight: 180 }}>
+              {illustration?.svg ? (
+                <img src={illustrationUrl(illustration.svg)} alt="App illustration" style={{ width: 200, height: 200 }} />
+              ) : illustrating ? (
+                <span className="muted">Drawing your creature… this takes about a minute.</span>
+              ) : (
+                <span className="muted small">No app illustration yet</span>
+              )}
+            </div>
+            <div className="stack">
+              <h3 style={{ margin: 0 }}>App-style illustration</h3>
+              <p className="small muted">The app redraws your creature in its own cartoon style, keeping the same body, limbs, and colors. It stays the same until you ask for a new one.</p>
+              <div className="row">
+                <button type="button" className="btn btn-accent btn-sm" onClick={illustrate} disabled={illustrating || busy}>
+                  {illustrating ? "Illustrating…" : illustration?.svg ? "Try again" : "✨ Illustrate my drawing"}
+                </button>
+                {illustration?.svg ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ illustration: null })} disabled={illustrating}>Remove illustration</button> : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
         {error ? <p className="error small">{error}</p> : null}
       </div>
     );
