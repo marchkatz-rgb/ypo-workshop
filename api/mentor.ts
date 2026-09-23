@@ -21,6 +21,7 @@ How to behave:
 - Never take over. Don't invent whole creatures, names, or regions unless asked. Offer options, not decisions.
 - Keep replies short: usually under 150 words. No headers, no bullet lists longer than three items.
 - If asked to check a draft creature, give: what works, the biggest problem (if any), and one question.
+- If the creator's drawing is included, look at it closely and talk about what you actually see: body plan, limbs, features, posture. Connect the drawing to the planet's conditions. Praise specifics, never generically.
 
 Safety rules (these always win over everything above):
 - You are talking with a child. Keep everything suitable for a 12-year-old: no graphic violence, gore, sexual content, drugs, self-harm, or scary content beyond the level of a nature documentary. Predators eat prey; keep it matter-of-fact.
@@ -74,7 +75,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const [{ data: regions }, { data: organisms }, { data: history }] = await Promise.all([
     supabase.from("regions").select("id, name, kind, description").eq("planet_id", planetId).order("sort_order"),
-    supabase.from("organisms").select("id, region_id, name, kind, description, traits").eq("planet_id", planetId).order("created_at"),
+    supabase.from("organisms").select("id, region_id, name, kind, description, traits, appearance").eq("planet_id", planetId).order("created_at"),
     (() => {
       let q = supabase.from("mentor_messages").select("role, content").eq("planet_id", planetId).order("created_at", { ascending: false }).limit(MAX_HISTORY);
       q = organismId ? q.eq("organism_id", organismId) : q.is("organism_id", null);
@@ -104,10 +105,24 @@ export async function POST(request: Request): Promise<Response> {
     .filter(Boolean)
     .join("\n");
 
+  // If the creature has a drawing, let the mentor look at it. Only paths inside
+  // this planet's folder are accepted, so the client can't point us elsewhere.
+  const draftAppearance = (body.draft as { appearance?: { drawing?: { originalPath?: string } } } | undefined)?.appearance;
+  const focusAppearance = focus ? ((focus as { appearance?: { drawing?: { originalPath?: string } } }).appearance) : undefined;
+  const drawingPath = draftAppearance?.drawing?.originalPath ?? focusAppearance?.drawing?.originalPath;
+  const safePath = typeof drawingPath === "string" && drawingPath.startsWith(`${planetId}/`) && !drawingPath.includes("..") ? drawingPath : null;
+  const drawingUrl = safePath ? `${supabaseUrl}/storage/v1/object/public/organism-art/${safePath}` : null;
+
   const past = (history ?? []).reverse();
+  const userContent: Anthropic.ContentBlockParam[] = drawingUrl
+    ? [
+        { type: "image", source: { type: "url", url: drawingUrl } },
+        { type: "text", text: `(The picture above is the creator's own drawing of this creature.)\n\n${message}` },
+      ]
+    : [{ type: "text", text: message }];
   const messages: Anthropic.MessageParam[] = [
     ...past.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-    { role: "user", content: message },
+    { role: "user", content: userContent },
   ];
   // The API requires the conversation to start with a user turn.
   while (messages.length && messages[0].role !== "user") messages.shift();

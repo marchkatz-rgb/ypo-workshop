@@ -1,4 +1,5 @@
-import { CreatureArt, sizeScale } from "./CreatureArt";
+import { sizeScale } from "./CreatureArt";
+import { CreatureSprite } from "./CreatureSprite";
 import { regionInfo } from "../lib/regionOptions";
 import { starColor } from "../lib/planetOptions";
 import type { Organism, PlanetConfig, Region } from "../lib/types";
@@ -48,7 +49,7 @@ export function RegionScene({ planet, region, organisms, onSelect, height }: Pro
           >
             <title>{o.name}</title>
             <svg width={px} height={px} viewBox="0 0 200 200" overflow="visible">
-              <CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} x={0} y={0} />
+              <CreatureSprite appearance={o.appearance} kind={o.kind} seed={o.id} />
             </svg>
             <text x={px / 2} y={px + 14} textAnchor="middle" className="creature-label">{o.name}</text>
           </g>

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CreatureArt } from "../components/CreatureArt";
+import { CreatureSprite } from "../components/CreatureSprite";
 import { Findings } from "../components/Findings";
 import { MentorPanel } from "../components/MentorPanel";
 import { useAuth } from "../lib/auth";
-import { deleteOrganism, friendlyError, loadPlanet, type PlanetBundle } from "../lib/data";
+import { deleteOrganism, drawingUrl, friendlyError, loadPlanet, type PlanetBundle } from "../lib/data";
 import {
   ACTIVITY_OPTIONS, BREATHING_OPTIONS, DEFENSE_OPTIONS, DIET_OPTIONS, LOCOMOTION_OPTIONS, REPRODUCTION_OPTIONS,
   SENSE_OPTIONS, SIZE_OPTIONS, SOCIAL_OPTIONS, optLabel,
@@ -40,7 +41,7 @@ export function OrganismPage() {
   async function remove() {
     if (!confirm(`Remove ${o!.name} from ${planet.name}?`)) return;
     try {
-      await deleteOrganism(o!.id);
+      await deleteOrganism(o!.id, planet.id);
       navigate(`/planets/${planet.id}`);
     } catch (e) {
       setError(friendlyError(e));
@@ -53,8 +54,15 @@ export function OrganismPage() {
       <div className="grid-2" style={{ alignItems: "start" }}>
         <div className="stack">
           <div className="art-frame" style={{ minHeight: 280 }}>
-            <CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} size={260} />
+            <CreatureSprite appearance={o.appearance} kind={o.kind} seed={o.id} size={260} />
           </div>
+          {o.appearance.drawing?.cutoutPath ? (
+            <div className="row small" style={{ justifyContent: "space-between" }}>
+              <span className="muted">Drawn by the creator</span>
+              <a href={drawingUrl(o.appearance.drawing.originalPath)} target="_blank" rel="noreferrer">View original picture</a>
+              <span className="row" style={{ gap: 6 }}><span className="muted">App version:</span><CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} size={48} /></span>
+            </div>
+          ) : null}
           {isOwner ? (
             <div className="row">
               <Link to={`/planets/${planet.id}/organisms/${o.id}/edit`} className="btn btn-primary btn-sm">Edit creature</Link>

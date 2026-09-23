@@ -108,7 +108,15 @@ export type LimbType = "legs" | "fins" | "wings" | "tentacles" | "roots" | "none
 export type Covering = "smooth" | "scales" | "fur" | "shell" | "feathers" | "bark" | "leaves" | "slime";
 export type Pattern = "none" | "stripes" | "spots";
 
+/** A creator-supplied reference drawing, stored in Supabase Storage. */
+export interface Drawing {
+  originalPath: string; // the photo or file as uploaded (downscaled)
+  cutoutPath: string; // cropped, background removed, transparent PNG
+  flip: boolean; // mirror so the creature faces right in scenes
+}
+
 export interface Appearance {
+  drawing?: Drawing | null;
   bodyShape: BodyShape;
   limbType: LimbType;
   limbCount: number; // 0-8

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChoiceGrid } from "../components/ChoiceGrid";
-import { CreatureArt } from "../components/CreatureArt";
+import { CreatureSprite } from "../components/CreatureSprite";
+import { DrawingEditor } from "../components/DrawingEditor";
 import { Findings } from "../components/Findings";
 import { MentorPanel } from "../components/MentorPanel";
 import { useAuth } from "../lib/auth";
@@ -33,6 +34,8 @@ export function OrganismWorkshop() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showMentor, setShowMentor] = useState(false);
+  // New creatures get their id up front so drawings can be stored under it before saving.
+  const [draftId] = useState(() => orgId ?? crypto.randomUUID());
 
   useEffect(() => {
     if (!planetId) return;
@@ -63,7 +66,7 @@ export function OrganismWorkshop() {
   const toggleSense = (s: Sense) => t({ senses: traits.senses.includes(s) ? traits.senses.filter((x) => x !== s) : [...traits.senses, s] });
   const toggleEats = (id: string) => t({ eats: traits.eats.includes(id) ? traits.eats.filter((x) => x !== id) : [...traits.eats, id] });
   const others = bundle.organisms.filter((o) => o.id !== orgId);
-  const seed = orgId ?? "preview";
+  const seed = draftId;
   const draft = { name, kind, region: bundle.regions.find((r) => r.id === regionId)?.name ?? null, description, traits, appearance, openQuestions: findings.filter((f) => !traits.acknowledged.includes(f.id)).map((f) => f.text) };
 
   async function save() {
@@ -71,7 +74,7 @@ export function OrganismWorkshop() {
     setBusy(true);
     setError("");
     try {
-      const saved = await saveOrganism({ id: orgId, planet_id: planetId, region_id: regionId, name: name.trim(), kind, description: description.trim(), traits, appearance });
+      const saved = await saveOrganism({ id: draftId, planet_id: planetId, region_id: regionId, name: name.trim(), kind, description: description.trim(), traits, appearance }, orgId ? "update" : "create");
       navigate(`/planets/${planetId}/organisms/${saved.id}`);
     } catch (e) {
       setError(friendlyError(e));
@@ -81,7 +84,7 @@ export function OrganismWorkshop() {
 
   const preview = (
     <div className="art-frame" style={{ minHeight: 220 }}>
-      <CreatureArt appearance={appearance} kind={kind} seed={seed} size={200} />
+      <CreatureSprite appearance={appearance} kind={kind} seed={seed} size={200} />
     </div>
   );
 
@@ -172,6 +175,12 @@ export function OrganismWorkshop() {
         ) : null}
 
         {step === 7 ? (
+          <div className="stack">
+            <div className="card" style={{ background: "var(--bg-2)" }}>
+              <h3>Your own drawing (optional)</h3>
+              <DrawingEditor planetId={bundle.planet.id} organismId={draftId} value={appearance.drawing} onChange={(d) => ap({ drawing: d })} />
+            </div>
+            {appearance.drawing?.cutoutPath ? <p className="muted small">The choices below still describe the creature for the app, and they draw the fallback picture. Your drawing is what shows in the scenes.</p> : null}
           <div className="grid-2">
             <div className="stack">
               {preview}
@@ -201,6 +210,7 @@ export function OrganismWorkshop() {
               <h3>Second color</h3>
               <div className="swatches">{PALETTE.map((c) => <button type="button" key={c} className={`swatch ${appearance.secondary === c ? "selected" : ""}`} style={{ background: c }} onClick={() => ap({ secondary: c })} aria-label={c} />)}</div>
             </div>
+          </div>
           </div>
         ) : null}
 

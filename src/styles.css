@@ -166,3 +166,17 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
   .wizard-actions { flex-direction: column-reverse; }
   .wizard-actions .btn { width: 100%; }
 }
+
+/* Drawing editor */
+.drawing-editor { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.drawing-current { display: grid; gap: 12px; grid-template-columns: minmax(180px, 240px) 1fr; align-items: center; }
+.crop-frame { position: relative; display: block; width: fit-content; max-width: 100%; line-height: 0; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 12px; overflow: hidden; background: #000; }
+.crop-frame img { display: block; max-width: 100%; max-height: 420px; pointer-events: none; vertical-align: top; }
+.crop-box { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); cursor: move; box-sizing: border-box; }
+.crop-handle { position: absolute; width: 28px; height: 28px; background: var(--accent); border: 3px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); touch-action: none; }
+.crop-handle.nw { left: 0; top: 0; cursor: nwse-resize; }
+.crop-handle.ne { left: 100%; top: 0; cursor: nesw-resize; }
+.crop-handle.sw { left: 0; top: 100%; cursor: nesw-resize; }
+.crop-handle.se { left: 100%; top: 100%; cursor: nwse-resize; }
+.art-frame.checker { background-color: #1a2140; background-image: linear-gradient(45deg, #232b52 25%, transparent 25%, transparent 75%, #232b52 75%), linear-gradient(45deg, #232b52 25%, transparent 25%, transparent 75%, #232b52 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
+@media (max-width: 600px) { .drawing-current { grid-template-columns: 1fr; } }

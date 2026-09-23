@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CreatureArt } from "../components/CreatureArt";
+import { CreatureSprite } from "../components/CreatureSprite";
 import { MentorPanel } from "../components/MentorPanel";
 import { RegionScene } from "../components/RegionScene";
 import { useAuth } from "../lib/auth";
@@ -151,7 +151,7 @@ export function PlanetView() {
 function OrganismCard({ planetId, o }: { planetId: string; o: PlanetBundle["organisms"][number] }) {
   return (
     <Link to={`/planets/${planetId}/organisms/${o.id}`} className="card card-link org-card">
-      <div className="org-art"><CreatureArt appearance={o.appearance} kind={o.kind} seed={o.id} size={88} /></div>
+      <div className="org-art"><CreatureSprite appearance={o.appearance} kind={o.kind} seed={o.id} size={88} /></div>
       <div style={{ minWidth: 0 }}>
         <h3 style={{ marginBottom: 2 }}>{o.name}</h3>
         <div className="muted small">{optLabel(SIZE_OPTIONS, o.traits.size)} {o.kind} · {optLabel(DIET_OPTIONS, o.traits.diet).toLowerCase()}</div>

@@ -18,8 +18,12 @@ Built with [Vite](https://vitejs.dev) + React, [Supabase](https://supabase.com)
   flag clashes with the planet and the food web and ask follow-up questions.
 - **Illustrator**: every creature is drawn from its own settings, so it always
   looks the same.
+- **Your own drawings**: upload a photo or picture of a creature, crop it, erase the
+  paper background on the device, and it becomes the creature everywhere, including
+  the animated scenes. Files live in Supabase Storage (bucket `organism-art`).
 - **Field guide**: a page per organism with anatomy, diet, behavior, and who eats whom.
-- **Science mentor**: chat with Claude about the planet or a specific creature.
+- **Science mentor**: chat with Claude about the planet or a specific creature. When a
+  creature has a drawing, the mentor can see it.
 - **Accounts**: anyone can view public worlds; you must sign in to build.
 
 ## Local development

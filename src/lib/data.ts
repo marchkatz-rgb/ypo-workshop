@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 import { normalizeAppearance, normalizeTraits } from "./creatureOptions";
 import { DEFAULT_PLANET } from "./planetOptions";
-import type { MentorMessage, Organism, Planet, PlanetConfig, Profile, Region, RegionKind } from "./types";
+import type { Drawing, MentorMessage, Organism, Planet, PlanetConfig, Profile, Region, RegionKind } from "./types";
 
 function asPlanet(row: Record<string, unknown>): Planet {
   return { ...(row as unknown as Planet), config: { ...DEFAULT_PLANET, ...((row.config as Partial<PlanetConfig>) ?? {}) } };
@@ -91,19 +91,42 @@ export async function deleteRegion(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function saveOrganism(input: Partial<Organism> & { planet_id: string; name: string }): Promise<Organism> {
+export async function saveOrganism(
+  input: Partial<Organism> & { id: string; planet_id: string; name: string },
+  mode: "create" | "update",
+): Promise<Organism> {
   const { id, created_at: _c, updated_at: _u, ...rest } = input;
-  const q = id
+  const q = mode === "update"
     ? supabase.from("organisms").update(rest).eq("id", id).select("*").single()
-    : supabase.from("organisms").insert(rest).select("*").single();
+    : supabase.from("organisms").insert({ id, ...rest }).select("*").single();
   const { data, error } = await q;
   if (error) throw error;
   return asOrganism(data);
 }
 
-export async function deleteOrganism(id: string): Promise<void> {
+export async function deleteOrganism(id: string, planetId: string): Promise<void> {
   const { error } = await supabase.from("organisms").delete().eq("id", id);
   if (error) throw error;
+  // Best effort: clean up any drawings stored for this creature.
+  try {
+    const folder = `${planetId}/${id}`;
+    const { data } = await supabase.storage.from("organism-art").list(folder);
+    if (data?.length) await supabase.storage.from("organism-art").remove(data.map((f) => `${folder}/${f.name}`));
+  } catch {
+    /* ignore */
+  }
+}
+
+const ART_BUCKET = "organism-art";
+
+/** Public URL for a file in the drawings bucket. */
+export function drawingUrl(path: string): string {
+  return supabase.storage.from(ART_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+export async function removeDrawingFiles(d: Drawing): Promise<void> {
+  const paths = [d.originalPath, d.cutoutPath].filter(Boolean);
+  if (paths.length) await supabase.storage.from(ART_BUCKET).remove(paths);
 }
 
 export async function loadMentorHistory(planetId: string, organismId: string | null): Promise<MentorMessage[]> {
