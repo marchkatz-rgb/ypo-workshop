@@ -180,3 +180,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .crop-handle.se { left: 100%; top: 100%; cursor: nwse-resize; }
 .art-frame.checker { background-color: #1a2140; background-image: linear-gradient(45deg, #232b52 25%, transparent 25%, transparent 75%, #232b52 75%), linear-gradient(45deg, #232b52 25%, transparent 25%, transparent 75%, #232b52 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
 @media (max-width: 600px) { .drawing-current { grid-template-columns: 1fr; } }
+
+/* Tutorial */
+.dots { display: flex; gap: 6px; align-items: center; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 0; padding: 0; background: var(--border); cursor: pointer; min-height: 0; }
+.dot.on { background: var(--accent); }
+@media (max-width: 600px) { .dots { display: none; } }

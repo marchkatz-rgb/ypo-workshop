@@ -47,11 +47,11 @@ export function Home() {
           Choose a star, set the gravity and air, carve out regions, and design creatures that truly fit their world.
           The science mentor asks the hard questions. You make the calls.
         </p>
-        {user ? (
-          <Link to="/planets/new" className="btn btn-primary">+ Create a new planet</Link>
-        ) : (
-          <p className="notice">Sign in to create your own planets. Anyone can explore the ones below.</p>
-        )}
+        <div className="row">
+          {user ? <Link to="/planets/new" className="btn btn-primary">+ Create a new planet</Link> : null}
+          <Link to="/how-it-works" className="btn btn-accent">How it works</Link>
+        </div>
+        {!user ? <p className="notice" style={{ marginTop: 12 }}>Sign in to create your own planets. Anyone can explore the ones below.</p> : null}
       </section>
 
       <h2>Worlds</h2>

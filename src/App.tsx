@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { AuthProvider } from "./lib/auth";
 import { isConfigured } from "./lib/supabase";
 import { Home } from "./pages/Home";
+import { HowItWorks } from "./pages/HowItWorks";
 import { OrganismPage } from "./pages/OrganismPage";
 import { OrganismWorkshop } from "./pages/OrganismWorkshop";
 import { PlanetBuilder } from "./pages/PlanetBuilder";
@@ -19,6 +20,7 @@ export default function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/planets/new" element={<PlanetBuilder />} />
             <Route path="/planets/:id" element={<PlanetView />} />
             <Route path="/planets/:id/edit" element={<PlanetBuilder />} />
