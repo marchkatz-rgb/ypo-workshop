@@ -8,7 +8,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const MODEL = "claude-opus-5";
 const MAX_HISTORY = 20;
-const DAILY_LIMIT = 80;
 
 const SYSTEM_PROMPT = `You are the Science Mentor inside "The World According to Miles", an app where a curious 12-year-old designs fictional planets and the life that evolves on them (speculative evolution).
 
@@ -37,6 +36,8 @@ interface Body {
   organismId?: string | null;
   message?: string;
   draft?: unknown;
+  /** Recent turns kept by the browser, used for visitors who aren't signed in. */
+  history?: { role?: string; content?: string }[];
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -47,8 +48,8 @@ export async function POST(request: Request): Promise<Response> {
   const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!supabaseUrl || !supabaseKey) return json({ error: "Server is missing its database settings." }, 500);
 
+  // Signing in is optional: visitors can ask about public worlds too.
   const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!token) return json({ error: "Please sign in to talk to the mentor." }, 401);
 
   let body: Body;
   try {
@@ -61,39 +62,34 @@ export async function POST(request: Request): Promise<Response> {
   const organismId = body.organismId ?? null;
   if (!planetId || !message) return json({ error: "Missing planet or message." }, 400);
 
-  // A client that acts as the signed-in user, so Row Level Security applies.
+  // A client that acts as the signed-in user (or as an anonymous visitor), so Row Level Security applies.
   const supabase = createClient(supabaseUrl, supabaseKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    global: token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-  if (userErr || !userData.user) return json({ error: "Your sign-in has expired. Please sign in again." }, 401);
-  const user = userData.user;
+  let user: { id: string } | null = null;
+  if (token) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData.user) return json({ error: "Your sign-in has expired. Please sign in again." }, 401);
+    user = userData.user;
+  }
 
   const { data: planet } = await supabase.from("planets").select("*").eq("id", planetId).maybeSingle();
   if (!planet) return json({ error: "Planet not found." }, 404);
-  const isOwner = planet.owner_id === user.id;
+  const isOwner = Boolean(user) && planet.owner_id === user!.id;
   // Visitors may ask about creatures, but only the creator can work on drafts.
   if (!isOwner && body.draft) return json({ error: "Only the planet's creator can review drafts." }, 403);
-
-  // Daily cap per person so a busy day can't run up the bill.
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count: usedToday } = await supabase
-    .from("mentor_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("role", "user")
-    .gte("created_at", since);
-  if ((usedToday ?? 0) >= DAILY_LIMIT) return json({ error: "You've reached today's limit of mentor questions. Come back tomorrow!" }, 429);
 
   const [{ data: regions }, { data: organisms }, { data: history }] = await Promise.all([
     supabase.from("regions").select("id, name, kind, description").eq("planet_id", planetId).order("sort_order"),
     supabase.from("organisms").select("id, region_id, name, kind, description, traits, appearance").eq("planet_id", planetId).order("created_at"),
-    (() => {
-      let q = supabase.from("mentor_messages").select("role, content").eq("planet_id", planetId).order("created_at", { ascending: false }).limit(MAX_HISTORY);
-      q = organismId ? q.eq("organism_id", organismId) : q.is("organism_id", null);
-      return q;
-    })(),
+    user
+      ? (() => {
+          let q = supabase.from("mentor_messages").select("role, content").eq("planet_id", planetId).order("created_at", { ascending: false }).limit(MAX_HISTORY);
+          q = organismId ? q.eq("organism_id", organismId) : q.is("organism_id", null);
+          return q;
+        })()
+      : Promise.resolve({ data: null as { role: string; content: string }[] | null }),
   ]);
 
   const regionList = regions ?? [];
@@ -129,7 +125,13 @@ export async function POST(request: Request): Promise<Response> {
   const safePath = typeof drawingPath === "string" && drawingPath.startsWith(`${planetId}/`) && !drawingPath.includes("..") ? drawingPath : null;
   const drawingUrl = safePath ? `${supabaseUrl}/storage/v1/object/public/organism-art/${safePath}` : null;
 
-  const past = (history ?? []).reverse();
+  // Signed-in users get their saved history; visitors send the turns their browser remembered.
+  const past = user
+    ? (history ?? []).reverse()
+    : (Array.isArray(body.history) ? body.history : [])
+        .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+        .slice(-MAX_HISTORY)
+        .map((m) => ({ role: m.role as string, content: (m.content as string).slice(0, 4000) }));
   const userContent: Anthropic.ContentBlockParam[] = drawingUrl
     ? [
         { type: "image", source: { type: "url", url: drawingUrl } },
@@ -174,10 +176,12 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!reply) reply = "Hmm, I lost my train of thought. Ask me again?";
 
-  await supabase.from("mentor_messages").insert([
-    { planet_id: planetId, organism_id: organismId, user_id: user.id, role: "user", content: message },
-    { planet_id: planetId, organism_id: organismId, user_id: user.id, role: "assistant", content: reply },
-  ]);
+  if (user) {
+    await supabase.from("mentor_messages").insert([
+      { planet_id: planetId, organism_id: organismId, user_id: user.id, role: "user", content: message },
+      { planet_id: planetId, organism_id: organismId, user_id: user.id, role: "assistant", content: reply },
+    ]);
+  }
 
   return json({ reply });
 }

@@ -107,12 +107,11 @@ export function OrganismPage() {
 
       <section className="card" style={{ marginTop: 16 }}>
         <h2>Ask the science mentor about {o.name}</h2>
-        {!isOwner && user ? <p className="muted small">You're exploring {owner?.display_name ?? "someone"}'s world. The mentor can explain this creature and how it fits its planet.</p> : null}
+        {!isOwner ? <p className="muted small">You're exploring {owner?.display_name ?? "someone"}'s world. The mentor can explain this creature and how it fits its planet.</p> : null}
         <MentorPanel
           planetId={planet.id}
           organismId={o.id}
-          allowed={Boolean(user)}
-          disallowedText="Sign in to ask the science mentor about this creature."
+          allowed
           starters={isOwner
             ? ["What would this creature's day look like?", "What might it evolve into after a million years?", "What would hunt it, and how would it cope?"]
             : ["How does this creature survive on this planet?", "What Earth animal is it most like, and why?", "What would it be like to meet one?"]}

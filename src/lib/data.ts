@@ -179,17 +179,16 @@ export interface MentorRequest {
   message: string;
   /** Draft creature not yet saved, for "check my creature" reviews. */
   draft?: unknown;
+  /** Recent turns, sent for visitors who aren't signed in (their chat isn't saved). */
+  history?: { role: "user" | "assistant"; content: string }[];
 }
 
 export async function askMentor(req: MentorRequest): Promise<string> {
   const { data: sess } = await supabase.auth.getSession();
   const token = sess.session?.access_token;
-  if (!token) throw new Error("Please sign in to talk to the mentor.");
-  const res = await fetch("/api/mentor", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(req),
-  });
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch("/api/mentor", { method: "POST", headers, body: JSON.stringify(req) });
   const body = (await res.json().catch(() => ({}))) as { reply?: string; error?: string };
   if (!res.ok) throw new Error(body.error ?? `Mentor error (${res.status})`);
   return body.reply ?? "";

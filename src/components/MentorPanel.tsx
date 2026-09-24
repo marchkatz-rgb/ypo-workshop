@@ -48,7 +48,7 @@ export function MentorPanel({ planetId, organismId = null, allowed, disallowedTe
     setLines((l) => [...l, { role: "user", content: trimmed }]);
     setText("");
     try {
-      const reply = await askMentor({ planetId, organismId, message: trimmed, draft });
+      const reply = await askMentor({ planetId, organismId, message: trimmed, draft, history: user ? undefined : lines });
       setLines((l) => [...l, { role: "assistant", content: reply }]);
     } catch (e) {
       setError(friendlyError(e));
@@ -62,14 +62,16 @@ export function MentorPanel({ planetId, organismId = null, allowed, disallowedTe
     send(text);
   }
 
-  if (!user || !allowed) {
-    return <p className="muted small">{disallowedText ?? "Sign in to ask the science mentor questions."}</p>;
+  if (!allowed) {
+    return <p className="muted small">{disallowedText ?? "The mentor isn't available here."}</p>;
   }
 
   return (
     <div className="mentor">
       {lines.length === 0 && !busy ? (
-        <p className="muted small">Ask the mentor anything about your world: whether an idea makes sense, what would evolve here, or how to make a creature fit better. The mentor asks questions back. You stay the creator.</p>
+        <p className="muted small">{user
+          ? "Ask the mentor anything about this world: whether an idea makes sense, what would evolve here, or how a creature fits. The mentor asks questions back."
+          : "Ask the mentor anything about this creature and its world. You're not signed in, so this conversation stays in your browser for this visit."}</p>
       ) : null}
       {starters && lines.length === 0 ? (
         <div className="chips">
@@ -97,7 +99,7 @@ export function MentorPanel({ planetId, organismId = null, allowed, disallowedTe
       </form>
       {lines.length > 0 ? (
         <div>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { await clearMentorHistory(planetId, organismId).catch(() => {}); setLines([]); }}>Clear conversation</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { if (user) await clearMentorHistory(planetId, organismId).catch(() => {}); setLines([]); }}>Clear conversation</button>
         </div>
       ) : null}
     </div>
