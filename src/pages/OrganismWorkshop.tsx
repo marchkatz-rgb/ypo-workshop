@@ -240,7 +240,7 @@ export function OrganismWorkshop() {
               <button type="button" className="btn btn-accent btn-sm" onClick={() => setShowMentor(!showMentor)}>{showMentor ? "Hide the mentor" : "Ask the science mentor about this creature"}</button>
             </div>
             {showMentor ? (
-              <MentorPanel planetId={bundle.planet.id} organismId={orgId ?? null} isOwner draft={draft} compact starters={["Does this creature make sense on my planet?", "What would its biggest survival problem be?", "How could I make it fit better without changing the idea?"]} />
+              <MentorPanel planetId={bundle.planet.id} organismId={orgId ?? null} allowed draft={draft} compact starters={["Does this creature make sense on my planet?", "What would its biggest survival problem be?", "How could I make it fit better without changing the idea?"]} />
             ) : null}
             {error ? <p className="error">{error}</p> : null}
           </>

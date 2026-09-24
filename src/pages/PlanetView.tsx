@@ -139,7 +139,8 @@ export function PlanetView() {
           <h2>Science mentor</h2>
           <MentorPanel
             planetId={planet.id}
-            isOwner={isOwner}
+            allowed={isOwner}
+            disallowedText="This planet-wide mentor is for the creator. You can ask the mentor about any creature from its field guide page."
             starters={["What kinds of life would evolve here first?", "Does my planet's setup make sense?", "What's missing from my food web?", "Give me three wild ideas for regions."]}
           />
         </div>

@@ -29,7 +29,7 @@ export function OrganismPage() {
   if (!bundle) return <p className="muted">Loading…</p>;
   const o = bundle.organisms.find((x) => x.id === orgId);
   if (!o) return <p className="notice">This creature doesn't exist here.</p>;
-  const { planet, regions, organisms } = bundle;
+  const { planet, regions, organisms, owner } = bundle;
   const isOwner = user?.id === planet.owner_id;
   const region = regions.find((r) => r.id === o.region_id);
   const eats = organisms.filter((x) => o.traits.eats.includes(x.id));
@@ -105,12 +105,19 @@ export function OrganismPage() {
         <Findings findings={open} acknowledged={o.traits.acknowledged} />
       </section>
 
-      {isOwner ? (
-        <section className="card" style={{ marginTop: 16 }}>
-          <h2>Ask the mentor about {o.name}</h2>
-          <MentorPanel planetId={planet.id} organismId={o.id} isOwner={isOwner} starters={["What would this creature's day look like?", "What might it evolve into after a million years?", "What would hunt it, and how would it cope?"]} />
-        </section>
-      ) : null}
+      <section className="card" style={{ marginTop: 16 }}>
+        <h2>Ask the science mentor about {o.name}</h2>
+        {!isOwner && user ? <p className="muted small">You're exploring {owner?.display_name ?? "someone"}'s world. The mentor can explain this creature and how it fits its planet.</p> : null}
+        <MentorPanel
+          planetId={planet.id}
+          organismId={o.id}
+          allowed={Boolean(user)}
+          disallowedText="Sign in to ask the science mentor about this creature."
+          starters={isOwner
+            ? ["What would this creature's day look like?", "What might it evolve into after a million years?", "What would hunt it, and how would it cope?"]
+            : ["How does this creature survive on this planet?", "What Earth animal is it most like, and why?", "What would it be like to meet one?"]}
+        />
+      </section>
     </>
   );
 }

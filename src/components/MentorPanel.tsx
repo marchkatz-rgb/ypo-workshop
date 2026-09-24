@@ -5,7 +5,10 @@ import { useAuth } from "../lib/auth";
 interface Props {
   planetId: string;
   organismId?: string | null;
-  isOwner: boolean;
+  /** Whether this viewer may talk to the mentor here. */
+  allowed: boolean;
+  /** Shown when the viewer isn't allowed (for example, not signed in). */
+  disallowedText?: string;
   /** Unsaved creature to include in the conversation. */
   draft?: unknown;
   starters?: string[];
@@ -18,7 +21,7 @@ interface Line {
 }
 
 /** Chat with the science mentor about a planet or a specific creature. */
-export function MentorPanel({ planetId, organismId = null, isOwner, draft, starters, compact }: Props) {
+export function MentorPanel({ planetId, organismId = null, allowed, disallowedText, draft, starters, compact }: Props) {
   const { user } = useAuth();
   const [lines, setLines] = useState<Line[]>([]);
   const [text, setText] = useState("");
@@ -27,11 +30,11 @@ export function MentorPanel({ planetId, organismId = null, isOwner, draft, start
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!user || !isOwner) return;
+    if (!user || !allowed) return;
     loadMentorHistory(planetId, organismId)
       .then((h) => setLines(h.map((m) => ({ role: m.role, content: m.content }))))
       .catch(() => {});
-  }, [planetId, organismId, user, isOwner]);
+  }, [planetId, organismId, user, allowed]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -59,8 +62,8 @@ export function MentorPanel({ planetId, organismId = null, isOwner, draft, start
     send(text);
   }
 
-  if (!user || !isOwner) {
-    return <p className="muted small">The science mentor talks with the planet's creator. Sign in as the owner to ask questions.</p>;
+  if (!user || !allowed) {
+    return <p className="muted small">{disallowedText ?? "Sign in to ask the science mentor questions."}</p>;
   }
 
   return (

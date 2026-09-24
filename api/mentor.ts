@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const MODEL = "claude-opus-5";
 const MAX_HISTORY = 20;
+const DAILY_LIMIT = 80;
 
 const SYSTEM_PROMPT = `You are the Science Mentor inside "The World According to Miles", an app where a curious 12-year-old designs fictional planets and the life that evolves on them (speculative evolution).
 
@@ -71,7 +72,19 @@ export async function POST(request: Request): Promise<Response> {
 
   const { data: planet } = await supabase.from("planets").select("*").eq("id", planetId).maybeSingle();
   if (!planet) return json({ error: "Planet not found." }, 404);
-  if (planet.owner_id !== user.id) return json({ error: "Only the planet's creator can talk to the mentor about it." }, 403);
+  const isOwner = planet.owner_id === user.id;
+  // Visitors may ask about creatures, but only the creator can work on drafts.
+  if (!isOwner && body.draft) return json({ error: "Only the planet's creator can review drafts." }, 403);
+
+  // Daily cap per person so a busy day can't run up the bill.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: usedToday } = await supabase
+    .from("mentor_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("role", "user")
+    .gte("created_at", since);
+  if ((usedToday ?? 0) >= DAILY_LIMIT) return json({ error: "You've reached today's limit of mentor questions. Come back tomorrow!" }, 429);
 
   const [{ data: regions }, { data: organisms }, { data: history }] = await Promise.all([
     supabase.from("regions").select("id, name, kind, description").eq("planet_id", planetId).order("sort_order"),
@@ -88,6 +101,9 @@ export async function POST(request: Request): Promise<Response> {
   const focus = organismId ? orgList.find((o) => o.id === organismId) : null;
 
   const context = [
+    isOwner
+      ? "WHO IS ASKING: the creator of this planet."
+      : "WHO IS ASKING: a visitor exploring someone else's planet. Answer their questions about this world and its creatures like an enthusiastic guide. Do not suggest changes to the creator's creatures or planet; if the visitor wants to build, encourage them to make their own planet.",
     `PLANET: ${planet.name}`,
     planet.description ? `Description: ${planet.description}` : "",
     `Settings: ${JSON.stringify(planet.config)}`,
